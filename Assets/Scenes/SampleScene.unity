@@ -445,6 +445,7 @@ GameObject:
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
   - component: {fileID: 963194229}
+  - component: {fileID: 963194230}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -533,7 +534,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 16610464d916ada47aa7d83b90ab4de0, type: 3}
   m_Name: 
@@ -541,6 +542,37 @@ MonoBehaviour:
   blurType: 0
   kernelSize: 5
   sigma: 1
+  intensitySigma: 0
+  spatialSigma: 0
+  offset: 0
+  passAmount: 0
+  downSample: 0
+  angle: 0
+  sampleCount: 0
+  centerX: 0
+  centerY: 0
+  strength: 0
+  blurShader: {fileID: 4800000, guid: 42ec95a97480f7547ba0fd6540610567, type: 3}
+--- !u!114 &963194230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcf0796f9e0b96b4ebe6f9d6c7d3420a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bloomThreshold: 1.5
+  softThreshold: 0.3
+  intensity: 1.3
+  downSample: 4
+  kernelSize: 9
+  sigma: 5
+  upscale: 1
+  bloomShader: {fileID: 4800000, guid: d589e7d3ca0802e46bbfb77d57d95852, type: 3}
   blurShader: {fileID: 4800000, guid: 42ec95a97480f7547ba0fd6540610567, type: 3}
 --- !u!1 &1250633155
 GameObject:

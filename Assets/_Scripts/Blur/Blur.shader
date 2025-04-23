@@ -37,6 +37,11 @@ Shader "Hidden/Blur"
         float _KernelSize;
         float _SpatialSigma;
         float _IntensitySigma;
+        float _Offset;
+        float _Angle;
+        float _SampleCount;
+        float2 _Center;
+        float _Strength;
 
         #define PI 3.1415
 
@@ -45,35 +50,8 @@ Shader "Hidden/Blur"
         {
             return (1.0f / sqrt(2.0f * PI * sigma * sigma)) * exp(-(pos * pos) / (2.0f * sigma * sigma));
         }
-        
-        
         ENDCG
-
-//        //pass 0
-//        //threshold pass
-//        Pass
-//        {
-//            CGPROGRAM
-//            #pragma vertex vert
-//            #pragma fragment frag
-//
-//            uniform float _BloomThreshold;
-//
-//            float4 frag(v2f i) : SV_Target
-//            {
-//                // sample the texture
-//                float4 col = tex2D(_MainTex, i.uv);
-//                //luminance
-//                float brightness = dot(col.rgb, float3(0.2126, 0.7152, 0.0722));
-//                //return brightness >= _BloomThreshold;
-//                if (brightness >= _BloomThreshold)
-//                {
-//                    return float4(col.rgb, 1);
-//                }
-//                return 0;
-//            }
-//            ENDCG
-//        }
+        
 
         //pass 0
         //horizontal 1d kernel box blur
@@ -117,10 +95,10 @@ Shader "Hidden/Blur"
                 float3 blur = 0;
                 float sum = 0;
                 int size = floor(_KernelSize / 2);
-                
+
                 for (int i = -size; i <= size; i++)
                 {
-                    float3 col = tex2D(_MainTex, uv + float2(0 ,texelSizeY) * i);
+                    float3 col = tex2D(_MainTex, uv + float2(0, texelSizeY) * i);
                     blur += col;
                     sum++;
                 }
@@ -175,7 +153,7 @@ Shader "Hidden/Blur"
             float4 frag(v2f i) : SV_Target
             {
                 float2 uv = i.uv;
-                float texelSizeX = _MainTex_TexelSize.x;
+                float texelSizeY = _MainTex_TexelSize.y;
                 float3 blur = 0;
                 float sum = 0;
 
@@ -183,7 +161,7 @@ Shader "Hidden/Blur"
 
                 for (int i = -size; i <= size; i++)
                 {
-                    float3 col = tex2D(_MainTex, uv + float2(texelSizeX, 0) * i);
+                    float3 col = tex2D(_MainTex, uv + float2(0, texelSizeY) * i);
                     float g = gaussian(_Sigma, i);
                     blur += col * g;
                     sum += g;
@@ -213,18 +191,18 @@ Shader "Hidden/Blur"
                 float sum = 0;
 
                 int size = floor(_KernelSize / 2);
-                
-                float3 centerCol = tex2D(_MainTex, uv );
+
+                float3 centerCol = tex2D(_MainTex, uv);
 
                 for (int i = -size; i <= size; i++)
                 {
                     float3 col = tex2D(_MainTex, uv + float2(texelSizeX, 0) * i);
-                    float intensityGaussian = gaussian(_IntensitySigma,length(col - centerCol));
+                    float intensityGaussian = gaussian(_IntensitySigma, length(col - centerCol));
                     float spatialGaussian = gaussian(_SpatialSigma, abs(i));
-                    blur += col * intensityGaussian * spatialGaussian;   
-                    sum  += intensityGaussian * spatialGaussian;
+                    blur += col * intensityGaussian * spatialGaussian;
+                    sum += intensityGaussian * spatialGaussian;
                 }
-                
+
                 return float4(blur / sum, 1);
             }
             ENDCG
@@ -248,19 +226,133 @@ Shader "Hidden/Blur"
                 float sum = 0;
 
                 int size = floor(_KernelSize / 2);
-                
-                float3 centerCol = tex2D(_MainTex, uv );
+
+                float3 centerCol = tex2D(_MainTex, uv);
 
                 for (int i = -size; i <= size; i++)
                 {
                     float3 col = tex2D(_MainTex, uv + float2(0, texelSizeY) * i);
-                    float intensityGaussian = gaussian(_IntensitySigma,length(col - centerCol));
+                    float intensityGaussian = gaussian(_IntensitySigma, length(col - centerCol));
                     float spatialGaussian = gaussian(_SpatialSigma, abs(i));
-                    blur += col * intensityGaussian * spatialGaussian;   
-                    sum  += intensityGaussian * spatialGaussian;
+                    blur += col * intensityGaussian * spatialGaussian;
+                    sum += intensityGaussian * spatialGaussian;
                 }
 
                 return float4(blur / sum, 1);
+            }
+            ENDCG
+        }
+
+        //pass 6
+        //kawase blur
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+
+            float4 frag(v2f i) : SV_Target
+            {
+                float2 uv = i.uv;
+                float2 texelSize = _MainTex_TexelSize.xy * _Offset;
+                float3 blur = 0;
+
+                float3 tl = tex2D(_MainTex, uv + float2(-texelSize.x, texelSize.y));
+                float3 tr = tex2D(_MainTex, uv + float2(texelSize.x, texelSize.y));
+                float3 bl = tex2D(_MainTex, uv + float2(-texelSize.x, -texelSize.y));
+                float3 br = tex2D(_MainTex, uv + float2(texelSize.x, -texelSize.y));
+                blur = (tl + tr + bl + br) * 0.25;
+
+                return float4(blur, 1);
+            }
+            ENDCG
+        }
+
+
+        //https://discussions.unity.com/t/radial-blur-shader-texture/628545
+        //pass 7
+        //fake radial blur
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            float2 rotateUV(float2 uv, float degrees)
+            {
+                const float Deg2Rad = (UNITY_PI * 2.0) / 360.0;
+                float rotationRadians = degrees * Deg2Rad;
+                float s = sin(rotationRadians);
+                float c = cos(rotationRadians);
+                float2x2 rotationMatrix = float2x2(c, -s, s, c);
+                uv -= 0.5;
+                uv = mul(rotationMatrix, uv);
+                uv += 0.5;
+                return uv;
+            }
+
+            float4 frag(v2f i) : SV_Target
+            {
+                float2 uv = i.uv;
+
+                float illuminationDecay = 1.0;
+                float4 col = float4(0.0, 0.0, 0.0, 0.0);
+                int samp = _Angle;
+
+                if (samp <= 0) samp = 1;
+
+                for (float i = 0; i < samp; i++)
+                {
+                    uv = rotateUV(uv, _Angle / samp);
+                    float4 texel = tex2D(_MainTex, uv);
+                    texel *= illuminationDecay * 1 / samp;
+                    col += texel;
+                }
+                return float4(col.rgb, 1);
+            }
+            ENDCG
+        }
+
+
+        //pass 8
+        //radial blur
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+
+
+            float4 frag(v2f i) : SV_Target
+            {
+                float2 uv = i.uv;
+                float2 center = _Center;
+                float2 dir = uv - center;
+                
+                
+                fixed4 color = tex2D(_MainTex, uv);  // Original sample
+                
+                // Start with original sample at full weight
+                float totalWeight = 1.0;
+                fixed4 sum = color;
+                
+                // Sample along the vector from center to current pixel
+                for (int s = 1; s <= _SampleCount; s++)
+                {
+                    // Calculate sample position - moving away from original position
+                    float weight = 1.0 / (s + 1);
+                    float2 offset = dir * _Strength * s / _SampleCount;
+                    float2 samplePos = uv - offset;
+                    
+                    // Add weighted sample
+                    sum += tex2D(_MainTex, samplePos) * weight;
+                    totalWeight += weight;
+                }
+                
+                // Return weighted average
+                return sum / totalWeight;
             }
             ENDCG
         }

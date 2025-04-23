@@ -208,7 +208,7 @@ Light:
   serializedVersion: 11
   m_Type: 1
   m_Color: {r: 1, g: 0.8596408, b: 0.5330188, a: 1}
-  m_Intensity: 2.59
+  m_Intensity: 2.7
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -545,14 +545,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1248175502}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16610464d916ada47aa7d83b90ab4de0, type: 3}
+  m_Script: {fileID: 11500000, guid: dcf0796f9e0b96b4ebe6f9d6c7d3420a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blurType: 2
+  bloomThreshold: 0.7
   kernelSize: 5
   sigma: 1
-  intensitySigma: 0.5
-  spatialSigma: 1
+  bloomShader: {fileID: 4800000, guid: d589e7d3ca0802e46bbfb77d57d95852, type: 3}
   blurShader: {fileID: 4800000, guid: 42ec95a97480f7547ba0fd6540610567, type: 3}
 --- !u!1001 &1302150549
 PrefabInstance:
